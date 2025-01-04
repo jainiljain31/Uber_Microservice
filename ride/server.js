@@ -3,6 +3,6 @@ const app = require("./app");
 
 const server = http.createServer(app);
 
-server.listen(3001, () => {
-  console.log("User Service is running on port 3001");
+server.listen(3003, () => {
+  console.log("Ride Service is running on port 3003");
 });

@@ -1,4 +1,4 @@
-const userModel = require("../models/user.models");
+const captainModel = require("../models/captain.models");
 const blacklisttokenModel = require("../models/blacklisttoken.models");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -6,22 +6,26 @@ const jwt = require("jsonwebtoken");
 module.exports.register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-    const user = await userModel.findOne({ email });
-    if (user) {
-      return res.status(400).json({ message: "User already exists" });
+    const captain = await captainModel.findOne({ email });
+    if (captain) {
+      return res.status(400).json({ message: "captain already exists" });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new userModel({ name, email, password: hashedPassword });
-    await newUser.save();
+    const newcaptain = new captainModel({
+      name,
+      email,
+      password: hashedPassword,
+    });
+    await newcaptain.save();
 
-    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: newcaptain._id }, process.env.JWT_SECRET, {
       expiresIn: "24h",
     });
 
+    // delete captain._doc.password;
     res.cookie("token", token);
-    delete user._doc.password;
 
-    res.json({ token, newUser });
+    res.json({ token, newcaptain });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal Server Error" });
@@ -32,23 +36,23 @@ module.exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await userModel.findOne({ email }).select("+password");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    const captain = await captainModel.findOne({ email }).select("+password");
+    if (!captain) {
+      return res.status(404).json({ message: "captain not found" });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, captain.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: captain._id }, process.env.JWT_SECRET, {
       expiresIn: "24h",
     });
-    delete user._doc.password;
+    delete captain._doc.password;
     res.cookie("token", token);
 
-    res.json({ token, user });
+    res.json({ token, captain });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal Server Error" });
@@ -69,9 +73,21 @@ module.exports.logout = async (req, res) => {
 
 module.exports.profile = async (req, res) => {
   try {
-    res.send(req.user);
+    res.send(req.captain);
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+module.exports.toggleAvailability = async (req, res) => {
+  try {
+    const captain = await captainModel.findById(req.captain._id);
+    captain.isavailable = !captain.isavailable;
+    await captain.save();
+    res.json(captain);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
   }
 };
