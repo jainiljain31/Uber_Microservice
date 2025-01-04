@@ -5,10 +5,13 @@ const cookieParser = require("cookie-parser");
 const captainRoutes = require("./routes/captain.routes");
 const app = express();
 const connectDB = require("./db/db");
+const rabbitMq = require("./service/rabbit");
+
 
 // Connect to MongoDB
 
 connectDB();
+rabbitMq.connect();
 
 app.use(express.json());
 app.use(cookieParser());
